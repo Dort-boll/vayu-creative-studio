@@ -1,5 +1,4 @@
 
-import { GoogleGenAI } from "@google/genai";
 import { ModelType, GenerationSettings, GenerationResult } from "../types";
 
 const IMAGE_FALLBACKS = [ModelType.PUTER_DALLE3, ModelType.PUTER_SDXL, ModelType.PUTER_SD3];
@@ -12,29 +11,32 @@ const ensurePuterReady = async (): Promise<void> => {
         await new Promise(r => setTimeout(r, 500));
     }
     if (!window.puter?.ai) {
-        throw new Error("Vayu Neural Link: Link establishment timed out. High network noise detected.");
+        throw new Error("Vayu Neural Link: Puter SDK failed to initialize. Check your internet connection.");
     }
 };
 
+/**
+ * Uses Puter's internal AI Chat to refine the user's prompt
+ * instead of relying on external Gemini API keys.
+ */
 const getRefinedPrompt = async (prompt: string, settings: GenerationSettings): Promise<string> => {
     try {
-        const apiKey = process.env.API_KEY;
-        if (!apiKey) return prompt;
+        await ensurePuterReady();
+        
+        const systemPrompt = `You are the Vayu AGI Architect. Refine this vision for ${settings.tool === 'image' ? 'still imagery' : 'cinematic motion'}.
+        Vision: "${prompt}"
+        Style: "${settings.style}"
+        Requirements: High material physics, ${settings.style} aesthetics, 8k details. 
+        Output ONLY the refined prompt (max 60 words). No preamble.`;
 
-        const ai = new GoogleGenAI({ apiKey });
-        const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
-            contents: `As Vayu Architect, refine this vision for ${settings.tool === 'image' ? 'still imagery' : 'cinematic motion'}.
-            Current Vision: "${prompt}"
-            Style Resonance: "${settings.style}"
-            Requirements: Vivid material physics, ${settings.style} lighting aesthetics, 8k resolution details. Max 65 words.`,
-            config: {
-                systemInstruction: "You are the Vayu AGI Architect, a master of converting abstract concepts into hyper-detailed neural synthesis scripts."
-            }
-        });
-
-        return response.text || prompt;
+        const response = await window.puter.ai.chat(systemPrompt);
+        
+        // Puter AI Chat returns a string directly or an object with a message
+        const refinedText = typeof response === 'string' ? response : response?.message?.content;
+        
+        return refinedText || prompt;
     } catch (e: any) {
+        console.warn("[Vayu Architect] Refinement failed, using original prompt.", e);
         return prompt;
     }
 };
@@ -45,6 +47,8 @@ export const generateManifestation = async (
 ): Promise<GenerationResult> => {
     try {
         await ensurePuterReady();
+        
+        // Architect the prompt using Puter's built-in AI
         const refinedPrompt = await getRefinedPrompt(prompt, settings);
         
         if (settings.tool === 'image') {
@@ -57,7 +61,7 @@ export const generateManifestation = async (
                     ]);
                     if (res?.src) return { url: res.src, actualType: 'image' };
                 } catch (err) {
-                    console.warn(`[Vayu Engine] Core ${model} node failure. Cycling...`);
+                    console.warn(`[Vayu Engine] Node ${model} failure. Cycling...`);
                 }
             }
         } else {
@@ -74,7 +78,7 @@ export const generateManifestation = async (
                         return { url, actualType: 'video' };
                     }
                 } catch (err) {
-                    console.warn(`[Vayu Engine] Cinema core ${model} node failure. Cycling...`);
+                    console.warn(`[Vayu Engine] Cinema node ${model} failure. Cycling...`);
                 }
             }
             
@@ -86,5 +90,5 @@ export const generateManifestation = async (
         throw new Error(globalErr.message || "Synthesis disrupted: Atmospheric noise detected in neural link.");
     }
 
-    throw new Error("Vayu Link Failure: All neural nodes are currently unreachable. Retrying at lower fidelity is recommended.");
+    throw new Error("Vayu Link Failure: All neural nodes are currently unreachable. Please try a different module.");
 };
