@@ -105,7 +105,7 @@ const App: React.FC = () => {
     
     setIsGenerating(true);
     setError(null);
-    setLoadingText('Connecting to Puter Engine...');
+    setLoadingText('Initializing Synthesis...');
     
     try {
       const result = await generateManifestation(prompt, settings);
@@ -229,15 +229,16 @@ const App: React.FC = () => {
 
       {isGenerating && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-sm">
-          <div className="glass-blue p-6 rounded-[2rem] flex items-center gap-6 border-sky-500/40 shadow-2xl">
+          <div className="glass-blue p-6 rounded-[2rem] flex items-center gap-6 border-sky-500/40 shadow-2xl overflow-hidden relative">
+            <div className="absolute inset-0 shimmer-bg opacity-20"></div>
             <div className="relative w-10 h-10 flex-shrink-0">
               <div className="absolute inset-0 rounded-full border-2 border-sky-400/20"></div>
               <div className="absolute inset-0 rounded-full border-t-2 border-sky-400 animate-spin"></div>
             </div>
-            <div className="flex-1">
+            <div className="flex-1 relative z-10">
               <p className="text-[9px] font-black text-sky-400 uppercase tracking-[0.3em] mb-2">{loadingText}</p>
               <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                <div className="h-full bg-sky-400 animate-loading-bar"></div>
+                <div className="h-full bg-sky-400 animate-loading-bar" style={{ width: '100%', animation: 'loading-bar 2s infinite linear' }}></div>
               </div>
             </div>
           </div>
@@ -260,9 +261,9 @@ const App: React.FC = () => {
       />
 
       <footer className="py-20 border-t border-white/5 mt-32 text-center opacity-40">
-        <p className="text-[9px] font-black uppercase tracking-[0.5em] mb-4">Vayu Creative Engine • Puter.js Edition</p>
+        <p className="text-[9px] font-black uppercase tracking-[0.5em] mb-4">Vayu Creative Engine • AGI Edition</p>
         <p className="text-[8px] text-slate-600 font-bold max-w-md mx-auto leading-relaxed">
-          Cloud-native intelligence. Built strictly with Puter Framework.<br/>
+          Cloud-native intelligence. Built with Vayu Neural Framework.<br/>
           © Rudratech Inc 2026. All rights reserved.
         </p>
       </footer>

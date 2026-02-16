@@ -12,10 +12,10 @@ const ensurePuterReady = async (): Promise<void> => {
             const timeout = 35000; 
             const check = async () => {
                 if (window.puter && window.puter.ai) {
-                    console.log("[Vayu Engine] Puter Framework synchronized.");
+                    console.log("[Vayu Engine] Neural Link synchronized.");
                     resolve();
                 } else if (Date.now() - start > timeout) {
-                    reject(new Error("Neural Link Failure: Puter framework blocked. Check for Adblockers or Corporate Firewalls."));
+                    reject(new Error("Neural Link Failure: Link handshake timeout."));
                 } else {
                     setTimeout(check, 500);
                 }
@@ -42,7 +42,7 @@ const executeSynthesis = async (prompt: string, model: string, type: 'image' | '
         }
         return null;
     } catch (err: any) {
-        console.warn(`[Vayu Engine] Node ${model} rejected synthesis:`, err?.message || err);
+        console.warn(`[Vayu Engine] Node ${model} rejected synthesis.`);
         return null;
     }
 };
@@ -58,7 +58,7 @@ export const generateManifestation = async (
             ? [settings.model, ...IMAGE_FALLBACKS.filter(m => m !== settings.model)]
             : [settings.model, ...VIDEO_FALLBACKS.filter(m => m !== settings.model)];
 
-        console.log("[Vayu] Initiating Puter Synthesis Phase.");
+        console.log("[Vayu] Initiating Neural Synthesis Phase.");
         for (const modelId of models) {
             const resultUrl = await executeSynthesis(prompt, modelId, settings.tool);
             if (resultUrl) return { url: resultUrl, actualType: settings.tool };
@@ -69,5 +69,5 @@ export const generateManifestation = async (
         throw new Error(globalErr.message || "Synthesis disrupted: Core neural handshake failed.");
     }
 
-    throw new Error("Vayu Link Exhausted: Puter nodes are currently under heavy load. Please try again in a few moments.");
+    throw new Error("Vayu Link Exhausted: Nodes are currently under heavy load. Please try again.");
 };
