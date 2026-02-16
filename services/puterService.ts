@@ -1,43 +1,54 @@
-
 import { ModelType, GenerationSettings, GenerationResult } from "../types";
+import { refineVisionPrompt } from "./geminiService";
 
 const IMAGE_FALLBACKS = [ModelType.PUTER_DALLE3, ModelType.PUTER_SDXL, ModelType.PUTER_SD3];
 const VIDEO_FALLBACKS = [ModelType.PUTER_COGVIDEO, ModelType.PUTER_KLING, ModelType.PUTER_LUMA];
 
+// Singleton promise to ensure Puter is only initialized once
+let puterInitPromise: Promise<void> | null = null;
+
 const ensurePuterReady = async (): Promise<void> => {
-    const start = Date.now();
-    const timeout = 15000;
-    while (!window.puter?.ai && (Date.now() - start) < timeout) {
-        await new Promise(r => setTimeout(r, 500));
+    if (!puterInitPromise) {
+        puterInitPromise = new Promise(async (resolve, reject) => {
+            const start = Date.now();
+            const timeout = 25000; 
+            const check = async () => {
+                if (window.puter && window.puter.ai) {
+                    console.log("[Vayu Engine] Puter Framework synchronized.");
+                    resolve();
+                } else if (Date.now() - start > timeout) {
+                    reject(new Error("Neural Link Failure: Puter framework failed to stabilize. Check your internet connection."));
+                } else {
+                    setTimeout(check, 500);
+                }
+            };
+            check();
+        });
     }
-    if (!window.puter?.ai) {
-        throw new Error("Vayu Neural Link: Puter SDK failed to initialize. Check your internet connection.");
-    }
+    return puterInitPromise;
 };
 
 /**
- * Uses Puter's internal AI Chat to refine the user's prompt
- * instead of relying on external Gemini API keys.
+ * Executes the actual Puter AI call with a timeout
  */
-const getRefinedPrompt = async (prompt: string, settings: GenerationSettings): Promise<string> => {
+const executeSynthesis = async (prompt: string, model: string, type: 'image' | 'video'): Promise<string | null> => {
     try {
-        await ensurePuterReady();
-        
-        const systemPrompt = `You are the Vayu AGI Architect. Refine this vision for ${settings.tool === 'image' ? 'still imagery' : 'cinematic motion'}.
-        Vision: "${prompt}"
-        Style: "${settings.style}"
-        Requirements: High material physics, ${settings.style} aesthetics, 8k details. 
-        Output ONLY the refined prompt (max 60 words). No preamble.`;
+        const timeoutMs = type === 'image' ? 70000 : 190000;
+        const res = await Promise.race([
+            type === 'image' 
+                ? window.puter.ai.txt2img(prompt, { model }) 
+                : window.puter.ai.txt2vid(prompt, { model }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), timeoutMs))
+        ]) as any;
 
-        const response = await window.puter.ai.chat(systemPrompt);
-        
-        // Puter AI Chat returns a string directly or an object with a message
-        const refinedText = typeof response === 'string' ? response : response?.message?.content;
-        
-        return refinedText || prompt;
-    } catch (e: any) {
-        console.warn("[Vayu Architect] Refinement failed, using original prompt.", e);
-        return prompt;
+        const url = res?.src || res?.url || (typeof res === 'string' ? res : null);
+        if (url && typeof url === 'string' && (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:'))) {
+            return url;
+        }
+        return null;
+    } catch (err) {
+        console.warn(`[Vayu Engine] Node ${model} failed:`, err);
+        return null;
     }
 };
 
@@ -48,47 +59,29 @@ export const generateManifestation = async (
     try {
         await ensurePuterReady();
         
-        // Architect the prompt using Puter's built-in AI
-        const refinedPrompt = await getRefinedPrompt(prompt, settings);
-        
-        if (settings.tool === 'image') {
-            const models = [settings.model, ...IMAGE_FALLBACKS.filter(m => m !== settings.model)];
-            for (const model of models) {
-                try {
-                    const res = await Promise.race([
-                        window.puter.ai.txt2img(refinedPrompt, { model }),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 45000))
-                    ]);
-                    if (res?.src) return { url: res.src, actualType: 'image' };
-                } catch (err) {
-                    console.warn(`[Vayu Engine] Node ${model} failure. Cycling...`);
-                }
-            }
-        } else {
-            const models = [settings.model, ...VIDEO_FALLBACKS.filter(m => m !== settings.model)];
-            for (const model of models) {
-                try {
-                    const res = await Promise.race([
-                        window.puter.ai.txt2vid(refinedPrompt, { model }),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 120000))
-                    ]);
-                    
-                    const url = res?.src || res?.url || (typeof res === 'string' ? res : null);
-                    if (url && typeof url === 'string' && url.startsWith('http')) {
-                        return { url, actualType: 'video' };
-                    }
-                } catch (err) {
-                    console.warn(`[Vayu Engine] Cinema node ${model} failure. Cycling...`);
-                }
-            }
-            
-            // Image Fallback for Video failure
-            const fallback = await window.puter.ai.txt2img(refinedPrompt, { model: ModelType.PUTER_SDXL });
-            if (fallback?.src) return { url: fallback.src, actualType: 'image' };
+        // Phase 1: Architect the prompt using Gemini's reasoning
+        const refinedPrompt = await refineVisionPrompt(prompt, settings);
+        const models = settings.tool === 'image' 
+            ? [settings.model, ...IMAGE_FALLBACKS.filter(m => m !== settings.model)]
+            : [settings.model, ...VIDEO_FALLBACKS.filter(m => m !== settings.model)];
+
+        console.log("[Vayu AGI] Phase 1: Attempting synthesis with Refined Architect prompt.");
+        for (const modelId of models) {
+            const resultUrl = await executeSynthesis(refinedPrompt, modelId, settings.tool);
+            if (resultUrl) return { url: resultUrl, actualType: settings.tool };
         }
+
+        // Phase 2: Fallback to Raw prompt (sometimes simpler is better for Puter filters)
+        console.log("[Vayu AGI] Phase 2: Refined prompt rejected. Falling back to Raw Vision input.");
+        for (const modelId of models) {
+            const resultUrl = await executeSynthesis(prompt, modelId, settings.tool);
+            if (resultUrl) return { url: resultUrl, actualType: settings.tool };
+        }
+
     } catch (globalErr: any) {
-        throw new Error(globalErr.message || "Synthesis disrupted: Atmospheric noise detected in neural link.");
+        console.error("[Vayu Engine] Global Synthesis Error:", globalErr);
+        throw new Error(globalErr.message || "Synthesis disrupted: Core neural handshake failed.");
     }
 
-    throw new Error("Vayu Link Failure: All neural nodes are currently unreachable. Please try a different module.");
+    throw new Error("Vayu Link Exhausted: No available neural nodes could manifest this vision. Tip: If this persists, try signing in to your Puter.com account in another tab to refresh your AI quota.");
 };

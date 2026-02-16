@@ -44,4 +44,9 @@ declare global {
   interface Window {
     puter: any;
   }
+  namespace NodeJS {
+    interface ProcessEnv {
+      API_KEY: string;
+    }
+  }
 }
