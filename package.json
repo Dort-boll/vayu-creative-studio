@@ -1,7 +1,7 @@
 {
   "name": "vayu-agi-studio",
   "private": true,
-  "version": "2.5.9",
+  "version": "2.6.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,6 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.41.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

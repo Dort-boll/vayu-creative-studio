@@ -18,36 +18,29 @@ const App: React.FC = () => {
   const [filterType, setFilterType] = useState<'all' | 'image' | 'video'>('all');
   const [showScrollTop, setShowScrollTop] = useState(false);
   
-  // Persistent Archive Management with memory safety
   useEffect(() => {
     try {
       const saved = localStorage.getItem(ARCHIVE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          // Verify items have necessary properties and filter out broken ones
           const validItems = parsed.filter(i => i && i.url && typeof i.url === 'string').slice(0, 40);
           setItems(validItems);
         }
       }
     } catch (e) {
-      console.warn("Archive state corrupted or missing, initializing clean state.");
       localStorage.removeItem(ARCHIVE_KEY);
     }
   }, []);
 
-  // Safe Background Storage Sync
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Memory Safety: Avoid storing massive Base64 data strings in localStorage 
-      // This is critical for Cloudflare Pages stability
       const storableItems = items
         .filter(item => item.url && !item.url.startsWith('data:'))
         .slice(0, 30);
       try {
         localStorage.setItem(ARCHIVE_KEY, JSON.stringify(storableItems));
       } catch (e) {
-        console.error("Local Storage quota exceeded. Pruning archive to save memory.");
         setItems(prev => prev.slice(0, 10));
       }
     }, 2000);
@@ -60,7 +53,6 @@ const App: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Optimized Background Matrix Canvas
   useEffect(() => {
     const container = document.getElementById('particles-container');
     if (!container) return;
@@ -113,7 +105,7 @@ const App: React.FC = () => {
     
     setIsGenerating(true);
     setError(null);
-    setLoadingText('Engaging AGI Architect...');
+    setLoadingText('Connecting to Puter Engine...');
     
     try {
       const result = await generateManifestation(prompt, settings);
@@ -131,14 +123,12 @@ const App: React.FC = () => {
 
       setItems(prev => [newItem, ...prev]);
       
-      // Auto-scroll to archive to show the result
       setTimeout(() => {
         document.getElementById('archive')?.scrollIntoView({ behavior: 'smooth' });
       }, 500);
 
     } catch (err: any) {
-      console.error("Vayu Generation Error:", err);
-      setError(err.message || "A neural disruption occurred during manifestation.");
+      setError(err.message || "A neural disruption occurred during synthesis.");
     } finally {
       setIsGenerating(false);
     }
@@ -170,7 +160,7 @@ const App: React.FC = () => {
           <div className="max-w-4xl mx-auto mb-16 glass-blue border-red-500/40 p-8 rounded-[2rem] flex items-center gap-6 text-red-400 animate-in slide-in-from-top-4">
             <i className="fa-solid fa-triangle-exclamation text-3xl opacity-50"></i>
             <div className="flex-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] mb-1 opacity-60">Neural Error</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] mb-1 opacity-60">Synthesis Failed</p>
               <span className="text-sm font-bold">{error}</span>
             </div>
             <button onClick={() => setError(null)} className="hover:text-white transition-colors">
@@ -179,7 +169,6 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Archive Section */}
         <div id="archive" className="mb-12 scroll-mt-32">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 border-b border-white/5 pb-8">
             <div className="flex items-center gap-6">
@@ -224,7 +213,6 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Manifestation Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {filteredItems.map(m => (
             <ImageCard key={m.id} manifestation={m} onClick={setSelectedItem} />
@@ -239,7 +227,6 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Generation HUD Overlay */}
       {isGenerating && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] w-[calc(100%-2rem)] max-w-sm">
           <div className="glass-blue p-6 rounded-[2rem] flex items-center gap-6 border-sky-500/40 shadow-2xl">
@@ -273,9 +260,9 @@ const App: React.FC = () => {
       />
 
       <footer className="py-20 border-t border-white/5 mt-32 text-center opacity-40">
-        <p className="text-[9px] font-black uppercase tracking-[0.5em] mb-4">Vayu AGI Suite • Stable v2.5.9</p>
+        <p className="text-[9px] font-black uppercase tracking-[0.5em] mb-4">Vayu Creative Engine • Puter.js Edition</p>
         <p className="text-[8px] text-slate-600 font-bold max-w-md mx-auto leading-relaxed">
-          Cloud-native intelligence. Built with Puter Framework and Gemini 3 Pro Vision.<br/>
+          Cloud-native intelligence. Built strictly with Puter Framework.<br/>
           © Rudratech Inc 2026. All rights reserved.
         </p>
       </footer>

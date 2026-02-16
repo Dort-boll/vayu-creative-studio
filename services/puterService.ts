@@ -1,5 +1,4 @@
 import { ModelType, GenerationSettings, GenerationResult } from "../types";
-import { refineVisionPrompt } from "./geminiService";
 
 const IMAGE_FALLBACKS = [ModelType.PUTER_DALLE3, ModelType.PUTER_SDXL, ModelType.PUTER_SD3];
 const VIDEO_FALLBACKS = [ModelType.PUTER_COGVIDEO, ModelType.PUTER_KLING, ModelType.PUTER_LUMA];
@@ -12,12 +11,11 @@ const ensurePuterReady = async (): Promise<void> => {
             const start = Date.now();
             const timeout = 35000; 
             const check = async () => {
-                // Check if script is blocked by Zero Trust / Adblock
                 if (window.puter && window.puter.ai) {
-                    console.log("[Vayu Engine] Neural nodes synchronized.");
+                    console.log("[Vayu Engine] Puter Framework synchronized.");
                     resolve();
                 } else if (Date.now() - start > timeout) {
-                    reject(new Error("Neural Link Failure: Puter framework blocked. If you are using Cloudflare Zero Trust or a VPN, ensure 'js.puter.com' is allowed."));
+                    reject(new Error("Neural Link Failure: Puter framework blocked. Check for Adblockers or Corporate Firewalls."));
                 } else {
                     setTimeout(check, 500);
                 }
@@ -44,7 +42,6 @@ const executeSynthesis = async (prompt: string, model: string, type: 'image' | '
         }
         return null;
     } catch (err: any) {
-        // Log detailed error for debugging Cloudflare issues
         console.warn(`[Vayu Engine] Node ${model} rejected synthesis:`, err?.message || err);
         return null;
     }
@@ -57,21 +54,11 @@ export const generateManifestation = async (
     try {
         await ensurePuterReady();
         
-        // Phase 1: Architect Mode (High-Fidelity)
-        const refinedPrompt = await refineVisionPrompt(prompt, settings);
         const models = settings.tool === 'image' 
             ? [settings.model, ...IMAGE_FALLBACKS.filter(m => m !== settings.model)]
             : [settings.model, ...VIDEO_FALLBACKS.filter(m => m !== settings.model)];
 
-        console.log("[Vayu AGI] Phase 1: Attempting synthesis with Refined Architect prompt.");
-        for (const modelId of models) {
-            const resultUrl = await executeSynthesis(refinedPrompt, modelId, settings.tool);
-            if (resultUrl) return { url: resultUrl, actualType: settings.tool };
-        }
-
-        // Phase 2: Direct Manifest Mode (Safety/Link Fallback)
-        // If the refined prompt is too complex for current neural nodes, use the raw user input.
-        console.log("[Vayu AGI] Phase 2: Architect rejected. Attempting with Direct Vision input.");
+        console.log("[Vayu] Initiating Puter Synthesis Phase.");
         for (const modelId of models) {
             const resultUrl = await executeSynthesis(prompt, modelId, settings.tool);
             if (resultUrl) return { url: resultUrl, actualType: settings.tool };
@@ -82,5 +69,5 @@ export const generateManifestation = async (
         throw new Error(globalErr.message || "Synthesis disrupted: Core neural handshake failed.");
     }
 
-    throw new Error("Vayu Link Exhausted: All neural nodes are currently congested. This can happen under high traffic or if your Cloudflare Zero Trust session has expired. Try again in a few moments.");
+    throw new Error("Vayu Link Exhausted: Puter nodes are currently under heavy load. Please try again in a few moments.");
 };
