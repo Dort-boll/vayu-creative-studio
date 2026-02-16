@@ -12,11 +12,12 @@ const ensurePuterReady = async (): Promise<void> => {
             const start = Date.now();
             const timeout = 35000; 
             const check = async () => {
+                // Check if script is blocked by Zero Trust / Adblock
                 if (window.puter && window.puter.ai) {
                     console.log("[Vayu Engine] Neural nodes synchronized.");
                     resolve();
                 } else if (Date.now() - start > timeout) {
-                    reject(new Error("Neural Link Failure: Cloud nodes failed to stabilize. Check your network or Puter.com session."));
+                    reject(new Error("Neural Link Failure: Puter framework blocked. If you are using Cloudflare Zero Trust or a VPN, ensure 'js.puter.com' is allowed."));
                 } else {
                     setTimeout(check, 500);
                 }
@@ -42,8 +43,9 @@ const executeSynthesis = async (prompt: string, model: string, type: 'image' | '
             return url;
         }
         return null;
-    } catch (err) {
-        console.warn(`[Vayu Engine] Node ${model} rejected synthesis:`, err);
+    } catch (err: any) {
+        // Log detailed error for debugging Cloudflare issues
+        console.warn(`[Vayu Engine] Node ${model} rejected synthesis:`, err?.message || err);
         return null;
     }
 };
@@ -67,7 +69,8 @@ export const generateManifestation = async (
             if (resultUrl) return { url: resultUrl, actualType: settings.tool };
         }
 
-        // Phase 2: Direct Manifest Mode (Safety Fallback)
+        // Phase 2: Direct Manifest Mode (Safety/Link Fallback)
+        // If the refined prompt is too complex for current neural nodes, use the raw user input.
         console.log("[Vayu AGI] Phase 2: Architect rejected. Attempting with Direct Vision input.");
         for (const modelId of models) {
             const resultUrl = await executeSynthesis(prompt, modelId, settings.tool);
@@ -79,5 +82,5 @@ export const generateManifestation = async (
         throw new Error(globalErr.message || "Synthesis disrupted: Core neural handshake failed.");
     }
 
-    throw new Error("Vayu Link Exhausted: No available neural nodes could manifest this vision. Tip: High cloud traffic detected. Try a simpler prompt or refresh the Vayu link.");
+    throw new Error("Vayu Link Exhausted: All neural nodes are currently congested. This can happen under high traffic or if your Cloudflare Zero Trust session has expired. Try again in a few moments.");
 };
