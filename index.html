@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Vayu - Pure Puter Creative Engine</title>
     <meta name="description" content="Next-generation creative engine powered strictly by Puter.js modules.">
-    <!-- Puter.js Framework SDK - Essential for synthesis -->
+    <!-- Puter.js Framework SDK -->
     <script src="https://js.puter.com/v2/"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,77 +14,109 @@
         
         :root {
             --vayu-glow: rgba(56, 189, 248, 0.4);
-            --accent-primary: #38bdf8;
-            --accent-secondary: #818cf8;
+            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --safe-top: env(safe-area-inset-top);
         }
 
-        html { scroll-behavior: smooth; }
+        html { 
+            scroll-behavior: smooth;
+            -webkit-text-size-adjust: 100%;
+        }
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background: #020617;
-            background: radial-gradient(circle at top center, #0f172a 0%, #020617 100%);
+            background: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 100%);
             color: #f8fafc;
             min-height: 100vh;
             overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
+        /* Unified Smooth Glass System */
         .glass-blue {
-            background: rgba(15, 23, 42, 0.85);
+            background: var(--glass-bg);
             backdrop-filter: blur(24px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transition: border-color 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .manifest-btn {
-            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.8) 0%, rgba(129, 140, 248, 0.8) 50%, rgba(192, 132, 252, 0.8) 100%);
             background-size: 200% auto;
-            transition: 0.5s;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            will-change: transform, box-shadow;
         }
         .manifest-btn:hover:not(:disabled) {
             background-position: right center;
-            box-shadow: 0 0 40px rgba(56, 189, 248, 0.4);
+            box-shadow: 0 10px 40px -10px rgba(56, 189, 248, 0.5);
+            transform: translateY(-2px);
+        }
+        .manifest-btn:active:not(:disabled) {
+            transform: scale(0.96);
         }
 
         .scanner-line {
             position: absolute;
             width: 100%;
-            height: 2px;
+            height: 3px;
             background: linear-gradient(90deg, transparent, #38bdf8, transparent);
-            animation: scan 3s infinite ease-in-out;
+            animation: scan 4s infinite linear;
             z-index: 50;
+            filter: blur(1px);
         }
         @keyframes scan {
-            0% { top: 0%; opacity: 0; }
-            50% { opacity: 0.8; }
-            100% { top: 100%; opacity: 0; }
+            0% { transform: translateY(-100%); opacity: 0; }
+            10% { opacity: 0.5; }
+            90% { opacity: 0.5; }
+            100% { transform: translateY(1000%); opacity: 0; }
         }
 
-        .animate-loading-bar {
-            width: 0%;
-            animation: loading-bar 2s infinite ease-in-out;
+        .shimmer-bg {
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.03) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 4s infinite linear;
         }
-        @keyframes loading-bar {
-            0% { width: 0%; transform: translateX(-100%); }
-            100% { width: 100%; transform: translateX(100%); }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
         }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.3); border-radius: 10px; }
 
         .neo-card {
-            background: rgba(30, 41, 59, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            background: rgba(255, 255, 255, 0.01);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            will-change: transform, border-color;
         }
         .neo-card:hover {
-            border-color: rgba(56, 189, 248, 0.3);
-            background: rgba(30, 41, 59, 0.4);
+            border-color: rgba(56, 189, 248, 0.25);
+            background: rgba(255, 255, 255, 0.04);
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
         }
         
-        .box-glow { transition: box-shadow 0.3s ease; }
-        .is-generating .box-glow { box-shadow: 0 0 30px rgba(56, 189, 248, 0.2); }
+        /* Smooth Mobile Navigation Fixes */
+        @media (max-width: 640px) {
+            .glass-blue { backdrop-filter: blur(16px); }
+        }
     </style>
 <script type="importmap">
 {
