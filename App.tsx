@@ -5,10 +5,15 @@ import Header from './components/Header';
 import ImageGenerator from './components/ImageGenerator';
 import ImageCard from './components/ImageCard';
 import ImageModal from './components/ImageModal';
+import IntroPage from './components/IntroPage';
 
 const ARCHIVE_KEY = 'vayu-archive-v6';
 
 const App: React.FC = () => {
+  const [view, setView] = useState<'intro' | 'studio'>('intro');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   const [items, setItems] = useState<Manifestation[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Manifestation | null>(null);
@@ -17,6 +22,52 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'image' | 'video'>('all');
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Poll for puter and check login state
+  useEffect(() => {
+    const initAuth = async () => {
+      if (window.puter && window.puter.auth) {
+        if (window.puter.auth.isSignedIn()) {
+          try {
+            const user = await window.puter.auth.getUser();
+            setCurrentUser(user);
+            setIsLoggedIn(true);
+            setView('studio');
+          } catch (e) {
+            console.error("Failed to fetch user:", e);
+          }
+        }
+      }
+    };
+    
+    const interval = setInterval(() => {
+      if (window.puter && window.puter.auth) {
+        clearInterval(interval);
+        initAuth();
+      }
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleSignOut = async () => {
+    try {
+      if (window.puter && window.puter.auth) {
+        await window.puter.auth.signOut();
+      }
+    } catch (e) {
+      console.error("Failed to sign out via Puter:", e);
+    }
+    setCurrentUser(null);
+    setIsLoggedIn(false);
+    setView('intro');
+  };
+
+  const handleEnterStudio = (user: any) => {
+    setCurrentUser(user);
+    setIsLoggedIn(true);
+    setView('studio');
+  };
   
   useEffect(() => {
     try {
@@ -29,7 +80,10 @@ const App: React.FC = () => {
         }
       }
     } catch (e) {
-      localStorage.removeItem(ARCHIVE_KEY);
+      console.warn("Storage read failure:", e);
+      try {
+        localStorage.removeItem(ARCHIVE_KEY);
+      } catch (inner) {}
     }
   }, []);
 
@@ -41,7 +95,10 @@ const App: React.FC = () => {
       try {
         localStorage.setItem(ARCHIVE_KEY, JSON.stringify(storableItems));
       } catch (e) {
-        setItems(prev => prev.slice(0, 10));
+        console.warn("Storage write failure:", e);
+        try {
+          setItems(prev => prev.slice(0, 10));
+        } catch (inner) {}
       }
     }, 2000);
     return () => clearTimeout(timer);
@@ -108,6 +165,9 @@ const App: React.FC = () => {
     setLoadingText('Initializing Synthesis...');
     
     try {
+      if (!window.puter || !window.puter.auth || !window.puter.auth.isSignedIn()) {
+        throw new Error("Your VAYU Neural Link session has expired or is disconnected. Please click 'Exit Studio' to reconnect.");
+      }
       const result = await generateManifestation(prompt, settings);
       
       const newItem: Manifestation = {
@@ -149,9 +209,20 @@ const App: React.FC = () => {
     });
   }, [items, searchQuery, filterType]);
 
+  if (view === 'intro') {
+    return (
+      <IntroPage 
+        onEnterStudio={handleEnterStudio} 
+        isLoggedIn={isLoggedIn} 
+        currentUser={currentUser} 
+        onSignOut={handleSignOut} 
+      />
+    );
+  }
+
   return (
     <div className={`min-h-screen pb-32 flex flex-col ${isGenerating ? 'is-generating' : ''}`}>
-      <Header isGenerating={isGenerating} />
+      <Header isGenerating={isGenerating} currentUser={currentUser} onSignOut={handleSignOut} />
       
       <main className="flex-1 container mx-auto px-4 max-w-7xl relative">
         <ImageGenerator onGenerate={handleGenerate} isGenerating={isGenerating} />

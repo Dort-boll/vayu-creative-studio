@@ -2,9 +2,11 @@ import React from 'react';
 
 interface HeaderProps {
   isGenerating?: boolean;
+  currentUser?: any;
+  onSignOut?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ isGenerating }) => {
+const Header: React.FC<HeaderProps> = ({ isGenerating, currentUser, onSignOut }) => {
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-[100] px-4 py-4 md:py-6 transition-all duration-500">
@@ -31,9 +33,19 @@ const Header: React.FC<HeaderProps> = ({ isGenerating }) => {
                   {isGenerating ? 'Active' : 'Standby'}
                 </span>
               </div>
-              <div className="hidden sm:flex gap-4">
+              <div className="hidden sm:flex gap-4 items-center">
                 <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-[9px] font-black text-slate-400 hover:text-white transition-all uppercase tracking-widest">Neural</button>
                 <button onClick={() => document.getElementById('archive')?.scrollIntoView({ behavior: 'smooth' })} className="text-[9px] font-black text-slate-400 hover:text-white transition-all uppercase tracking-widest">Archive</button>
+                {currentUser && (
+                  <span className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded">
+                    {currentUser.username}
+                  </span>
+                )}
+                {onSignOut && (
+                  <button onClick={onSignOut} className="text-[9px] font-black text-red-400 hover:text-red-300 transition-all uppercase tracking-widest border border-red-500/15 hover:bg-red-500/5 px-2 py-1 rounded">
+                    Exit Studio
+                  </button>
+                )}
               </div>
             </div>
           </div>
